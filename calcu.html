@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Descriptive Statistics Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="calcustyle.css">
+</head>
+<body>
+
+  <div class="split-screen">
+    <!-- Info Section -->
+    <div class="info-section">
+      <div>
+        <h1>Descriptive Statistics Calculator</h1>
+        <p>This tool helps you compute the <strong>mean</strong>, <strong>median</strong>, <strong>mode</strong>, <strong>range</strong>, <strong>variance</strong>, <strong>standard deviation</strong>, <strong>quartiles</strong>, and <strong>IQR</strong> of a list of numbers quickly and easily.</p>
+        <img src="calcuimg.png" alt="Statistics Illustration">
+      </div>
+    </div>
+
+    <!-- Calculator Section -->
+    <div class="calculator-section">
+      <div class="calculator-box">
+        <h2>Enter Your Data</h2>
+
+        <label for="numbers">Numbers (comma-separated):</label>
+        <input type="text" id="numbers" placeholder="e.g. 1, 2, 2, 3, 4, 5" oninput="validateInput(this)">
+
+        <!-- Keypad -->
+        <div class="keypad">
+          <button type="button" onclick="appendNumber('1')">1</button>
+          <button type="button" onclick="appendNumber('2')">2</button>
+          <button type="button" onclick="appendNumber('3')">3</button>
+          <button type="button" onclick="appendNumber('4')">4</button>
+          <button type="button" onclick="appendNumber('5')">5</button>
+          <button type="button" onclick="appendNumber('6')">6</button>
+          <button type="button" onclick="appendNumber('7')">7</button>
+          <button type="button" onclick="appendNumber('8')">8</button>
+          <button type="button" onclick="appendNumber('9')">9</button>
+          <button type="button" onclick="appendNumber('0')">0</button>
+          <button type="button" onclick="appendComma()">,</button>
+          <button type="button" onclick="backspace()">←</button>
+        </div>
+
+        <label for="data-type">Select Data Type:</label>
+        <select id="data-type">
+          <option value="population">Population</option>
+          <option value="sample">Sample</option>
+        </select>
+
+        <button onclick="calculateStats()">Calculate</button>
+
+        <div class="results" id="results">
+          <div class="results-container">
+            <div class="result-item"><h4>Mean</h4><p id="mean">—</p></div>
+            <div class="result-item"><h4>Median</h4><p id="median">—</p></div>
+            <div class="result-item"><h4>Mode</h4><p id="mode">—</p></div>
+            <div class="result-item"><h4>Range</h4><p id="range">—</p></div>
+            <div class="result-item"><h4>Variance</h4><p id="variance">—</p></div>
+            <div class="result-item"><h4>Standard Deviation</h4><p id="stddev">—</p></div>
+            <div class="result-item"><h4>Q1 (1st Quartile)</h4><p id="q1">—</p></div>
+            <div class="result-item"><h4>Q2 (2nd Quartile)</h4><p id="q2">—</p></div>
+            <div class="result-item"><h4>Q3 (3rd Quartile)</h4><p id="q3">—</p></div>
+            <div class="result-item"><h4>Interquartile Range</h4><p id="iqr">—</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function validateInput(input) {
+      input.value = input.value.replace(/[^0-9, ]/g, '');
+    }
+
+    function appendNumber(num) {
+      const input = document.getElementById("numbers");
+      input.value += num;
+    }
+
+    function appendComma() {
+      const input = document.getElementById("numbers");
+      if (input.value && input.value.slice(-1) !== ',') {
+        input.value += ', ';
+      }
+    }
+
+    function backspace() {
+      const input = document.getElementById("numbers");
+      input.value = input.value.trim().slice(0, -1);
+    }
+
+    function calculateStats() {
+      const input = document.getElementById("numbers").value;
+      const resultsDiv = document.getElementById("results");
+      const type = document.getElementById("data-type").value;
+
+      const numArray = input.split(',').map(n => parseFloat(n.trim())).filter(n => !isNaN(n));
+      if (numArray.length === 0) {
+        resultsDiv.innerHTML = "<p>Please enter valid numbers.</p>";
+        return;
+      }
+
+      const mean = numArray.reduce((sum, val) => sum + val, 0) / numArray.length;
+      const sorted = [...numArray].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      const median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+
+      const frequency = {};
+      let maxFreq = 0;
+      let modes = [];
+
+      for (const num of numArray) {
+        frequency[num] = (frequency[num] || 0) + 1;
+        if (frequency[num] > maxFreq) maxFreq = frequency[num];
+      }
+
+      for (const num in frequency) {
+        if (frequency[num] === maxFreq) {
+          modes.push(Number(num));
+        }
+      }
+
+      const uniqueMode = modes.length === numArray.length ? "No unique mode" : modes.join(", ");
+      const range = Math.max(...numArray) - Math.min(...numArray);
+
+      let variance;
+      if (type === "sample") {
+        variance = numArray.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / (numArray.length - 1);
+      } else {
+        variance = numArray.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / numArray.length;
+      }
+      const stdDev = Math.sqrt(variance);
+
+      const getQuartile = (arr, q) => {
+        const pos = (arr.length - 1) * q;
+        const base = Math.floor(pos);
+        const rest = pos - base;
+        return arr[base + 1] !== undefined ? arr[base] + rest * (arr[base + 1] - arr[base]) : arr[base];
+      };
+
+      const q1 = getQuartile(sorted, 0.25);
+      const q3 = getQuartile(sorted, 0.75);
+      const iqr = q3 - q1;
+
+      resultsDiv.innerHTML = `
+        <div class="results-container">
+          <div class="result-item"><h4>Mean</h4><p>${mean.toFixed(2)}</p></div>
+          <div class="result-item"><h4>Median</h4><p>${median}</p></div>
+          <div class="result-item"><h4>Mode</h4><p>${uniqueMode}</p></div>
+          <div class="result-item"><h4>Range</h4><p>${range}</p></div>
+          <div class="result-item"><h4>${type === "sample" ? "Sample Variance" : "Population Variance"}</h4><p>${variance.toFixed(2)}</p></div>
+          <div class="result-item"><h4>${type === "sample" ? "Sample Standard Deviation" : "Population Standard Deviation"}</h4><p>${stdDev.toFixed(2)}</p></div>
+          <div class="result-item"><h4>Q1 (1st Quartile)</h4><p>${q1}</p></div>
+          <div class="result-item"><h4>Q2 (2nd Quartile)</h4><p>${median}</p></div>
+          <div class="result-item"><h4>Q3 (3rd Quartile)</h4><p>${q3}</p></div>
+          <div class="result-item"><h4>Interquartile Range</h4><p>${iqr}</p></div>
+        </div>
+      `;
+    }
+  </script>
+
+</body>
+</html>
